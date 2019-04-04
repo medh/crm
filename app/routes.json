@@ -1,0 +1,100 @@
+{
+  "pages": [
+    {
+      "methods": [
+        "get",
+        "post"
+      ],
+      "pattern": "/user/login",
+      "controller": "User",
+      "action": "login"
+    },
+    {
+      "methods": "get",
+      "pattern": "/user/logout",
+      "controller": "User",
+      "action": "logout",
+      "mustBeLogged": true
+    },
+    {
+      "methods": [
+        "get",
+        "post"
+      ],
+      "pattern": "/contact/add",
+      "controller": "Contact",
+      "action": "add",
+      "mustBeLogged": true
+    },
+    {
+      "methods": "get",
+      "pattern": "/contact/index",
+      "controller": "Contact",
+      "action": "index",
+      "mustBeLogged": true
+    },
+    {
+      "methods": "post",
+      "pattern": "/contact/delete/:id",
+      "controller": "Contact",
+      "action": "delete",
+      "mustBeLogged": true
+    },
+    {
+      "methods": [
+        "get",
+        "post"
+      ],
+      "pattern": "/contact/edit/:id",
+      "controller": "Contact",
+      "action": "edit",
+      "mustBeLogged": true
+    },
+    {
+      "methods": [
+        "get",
+        "post"
+      ],
+      "pattern": "/address/add/:contactId",
+      "controller": "Address",
+      "action": "add",
+      "mustBeLogged": true
+    },
+    {
+      "methods": "get",
+      "pattern": "/address/index/:contactId",
+      "controller": "Address",
+      "action": "index",
+      "mustBeLogged": true
+    },
+    {
+      "methods": [
+        "get",
+        "post"
+      ],
+      "pattern": "/address/edit/:id",
+      "controller": "Address",
+      "action": "edit",
+      "mustBeLogged": true
+    },
+    {
+      "methods": "post",
+      "pattern": "/address/delete/:id",
+      "controller": "Address",
+      "action": "delete",
+      "mustBeLogged": true
+    }
+  ],
+  "api": [
+    {
+      "methods": "post",
+      "pattern": "/palindrome",
+      "action": "palindrome"
+    },
+    {
+      "methods": "post",
+      "pattern": "/email",
+      "action": "email"
+    }
+  ]
+}
