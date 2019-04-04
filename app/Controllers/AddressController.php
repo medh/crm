@@ -2,7 +2,8 @@
 
 namespace App\Controllers;
 
-use App\Controllers\ControllerInterface;
+use InvalidArgumentException;
+use App\Components\Exception\CustomException;
 
 class AddressController extends MainController implements ControllerInterface
 {
@@ -13,151 +14,184 @@ class AddressController extends MainController implements ControllerInterface
     {
         parent::__construct();
 
-        $this->loadModel('Addresse');
+        $this->loadModel('Address');
         $this->loadModel('Contact');
     }
 
     /**
-     * Affichage de la liste des adresses d'un Utilisateur
+     * Affichage de la liste des adresses d'un contact
+     *
+     * @param int|null $contactId
+     * @throws \Twig\Error\LoaderError
+     * @throws \Twig\Error\RuntimeError
+     * @throws \Twig\Error\SyntaxError
      */
-    public function index()
+    public function index(int $contactId = null)
     {
-        $idContact = intval($_GET['id']);
-        $contact = $this->Contact->findById($idContact);
-        $address = $this->Addresse->getByContact($idContact);
-        echo $this->twig->render('addresslist.html.twig', [
-            'addresses' => $address,
-            'idContact' => $idContact,
-            'contact'   => $contact
+        echo $this->twig->render('address.index.html.twig', [
+            'addresses' => $this->Address->getByContact($contactId),
+            'contact' => $this->getParent($contactId)
         ]);
     }
 
     /**
-     * Ajout d'adresse pour un contact
+     * Récuperation du contact avec son id
+     *
+     * @param int $parentId
+     * @return bool
+     * @throws CustomException
      */
-    public function add()
+    private function getParent(int $parentId): \stdClass
     {
-        $error = false;
-        $id = intval($_GET['id']);
+        $contact = $this->Contact->findById($parentId);
 
-        if (!empty($_POST)) {
-            // Nettoyage
-            $response = $this->sanitize($_POST);
-
-            if ($response["response"]) {
-
-                $idContact = $response['idContact'];
-                $result = $this->Addresse->create([
-                    'number'     => $response['number'],
-                    'city'       => $response['city'],
-                    'country'    => $response['country'],
-                    'postalCode' => $response['postalCode'],
-                    'street'     => $response['street'],
-                    'idContact'  => $response['idContact']
-                ]);
-
-                if ($result) {
-                    header("Location: /index.php?p=address.index&id=$idContact");
-                } else {
-                    $error = true;
-                    $this->twig->render('addressadd.html.twig',
-                        ["idContact" => $id,'error' => $error]);
-                }
-            } else {
-                $error = true;
-                $this->twig->render('addressadd.html.twig',
-                    ["idContact" => $id,'error' => $error]);
-
-            }
+        if (!$contact) {
+            throw new CustomException('Le Contact ' . $parentId . ' n\'existe pas');
+        } else {
+            return $contact;
         }
-        echo $this->twig->render('addressadd.html.twig',
-            ["idContact" => $id,'error' => $error]);
+    }
+
+    /**
+     * Ajout d'une adresse pour un contact
+     *
+     * @param int|null $contactId
+     * @throws CustomException
+     * @throws \Twig\Error\LoaderError
+     * @throws \Twig\Error\RuntimeError
+     * @throws \Twig\Error\SyntaxError
+     */
+    public function add(int $contactId = null)
+    {
+        $this->getParent($contactId);
+
+        try {
+            if (!empty($_POST) && $this->isValid($_POST)) {
+                $response = $this->sanitize($_POST);
+                if ($this->Address->create($response)) {
+                    static::redirect('address/index/' . $contactId);
+                }
+            }
+        } catch (InvalidArgumentException $e) {
+            $error = $e->getMessage();
+        }
+
+        echo $this->twig->render('address.add.html.twig', [
+            'error' => $error ?? false,
+            'data' => array_merge($_POST, ['idContact' => $contactId])
+        ]);
     }
 
     /**
      * Modification d'une adresse d'un contact
+     *
+     * @param int $id
+     * @throws CustomException
+     * @throws \Twig\Error\LoaderError
+     * @throws \Twig\Error\RuntimeError
+     * @throws \Twig\Error\SyntaxError
      */
-    public function edit()
+    public function edit(int $id)
     {
-        $error = false;
-        $id = intval($_GET['id']);
-        if (!empty($_POST)) {
-            $response = $this->sanitize($_POST);
+        $addressData = $this->checkIfExist($id);
 
+        try {
+            if (!empty($_POST) && $this->isValid($_POST)) {
+                $addressData = $_POST;
+                $response = $this->sanitize($_POST);
 
-            if ($response["response"]) {
-                $addresse = $this->Addresse->findById($id);
-                $result = $this->Addresse->update($id,
-                    [
-                        'number'     => $response['number'],
-                        'city'       => $response['city'],
-                        'country'    => $response['country'],
-                        'postalCode' => $response['postalCode'],
-                        'street'     => $response['street'],
-                    ]);
-                if ($result) {
-                    header("Location: /index.php?p=address.index&id=$addresse->idContact");
-                } else {
-                    $error = true;
-                    $this->twig->render('addressadd.html.twig',
-                        ["idContact" => $id,'error' => $error]);
-
+                if ($this->Address->update($id, $response)) {
+                    static::redirect('address/index/' . $addressData['idContact']);
                 }
-            } else {
-
-                $error = true;
-                $this->twig->render('addressadd.html.twig',
-                    ["idContact" => $id,'error' => $error]);
-
             }
+        } catch (InvalidArgumentException $e) {
+            $error = $e->getMessage();
         }
 
-        $data = $this->Addresse->findById($id);
-        echo $this->twig->render('addressadd.html.twig',
-            [
-                'data'      => $data,
-                "idContact" => $data->idContact
-            ]);
+        echo $this->twig->render('address.add.html.twig', ['error' => $error ?? false, 'data' => $addressData]);
+    }
+
+    /**
+     * Vérification de l'existance d'une addresse
+     *
+     * @param $id
+     * @return array
+     * @throws CustomException
+     */
+    private function checkIfExist($id): array
+    {
+        $address = $this->Address->findById($id);
+        if (!$address) {
+            throw new CustomException('L\'addresse ' . $id . ' n\'existe pas');
+        }
+        return get_object_vars($address);
     }
 
     /**
      * Suppression d'une adresse d'un contact
+     *
+     * @param int $id
+     * @throws CustomException
      */
-    public function delete()
+    public function delete(int $id)
     {
-       //@todo
+        if ($address = $this->checkIfExist($id)) {
+            $this->Address->delete($id);
+            static::redirect('address/index/' . $address['idContact']);
+        }
     }
 
-
     /**
-     * Vérifie les contrainte d'enregistrement
+     * Normalisation des données à enregistrer
      *
      * @param array $data
-     *
      * @return array
      */
-    public function sanitize($data = [])
+    public function sanitize(array $data = []): array
     {
-        $number     = $_POST['number'];
-        $city       = strtoupper($_POST['city']);
-        $country    = strtoupper($_POST['country']);
-        $street     = strtoupper($_POST['street']);
-        $idContact  = intval($_POST['idContact']);
+        return [
+            'number' => $data['number'],
+            'street' => strtoupper($data['street']),
+            'postalCode' => $data['postalCode'],
+            'city' => strtoupper($data['city']),
+            'country' => strtoupper($data['country']),
+            'idContact' => $data['idContact']
+        ];
+    }
 
-        if ($number && $city && $country && $postalCode && $street
-            && $idContact
-        ) {
-            return [
-                'response'   => true,
-                'number'     => $_POST['number'],
-                'city'       => strtoupper($_POST['city']),
-                'country'    => strtoupper($_POST['country']),
-                'postalCode' => $postalCode,
-                'street'     => strtoupper($_POST['street']),
-                'idContact'  => $_POST['idContact']
-            ];
-        } else {
-            return ['response' => false];
+    /**
+     * Vérification des contraintes d'enregistrement
+     *
+     * @param array $data
+     * @return bool
+     * @throws Exception
+     */
+    private function isValid(array $data): bool
+    {
+        if (!isset($data['number']) || empty($data['number'])) {
+            throw new InvalidArgumentException('Le numéro est obligatoire');
+        } else if (!is_numeric($data['number'])) {
+            throw new InvalidArgumentException('Le numéro est invalide');
         }
+
+        if (!isset($data['street']) || empty($data['street'])) {
+            throw new InvalidArgumentException('La rue est obligatoire');
+        }
+
+        if (!isset($data['postalCode']) || empty($data['postalCode'])) {
+            throw new InvalidArgumentException('Le code postal est obligatoire');
+        } else if (!is_numeric($data['postalCode'])) {
+            throw new InvalidArgumentException('Le  code postal est invalide');
+        }
+
+        if (!isset($data['city']) || empty($data['city'])) {
+            throw new InvalidArgumentException('La ville est obligatoire');
+        }
+
+        if (!isset($data['country']) || empty($data['country'])) {
+            throw new InvalidArgumentException('Le pays est obligatoire');
+        }
+
+        return true;
     }
 }

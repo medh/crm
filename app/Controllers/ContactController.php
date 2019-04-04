@@ -2,9 +2,9 @@
 
 namespace App\Controllers;
 
-use App\Controllers\ControllerInterface;
-use InvalidArgumentException;
 use Exception;
+use App\Components\Exception\CustomException;
+use InvalidArgumentException;
 
 class ContactController extends MainController implements ControllerInterface
 {
@@ -18,100 +18,153 @@ class ContactController extends MainController implements ControllerInterface
     {
         parent::__construct();
 
+        $this->loadModel('Contact');
+
         $this->userId = $_SESSION['auth']['id'];
     }
 
     /**
      * Affichage de la liste des contacts de l'utilisateur connecté
+     *
+     * @param int|null $id
+     * @throws \Twig\Error\LoaderError
+     * @throws \Twig\Error\RuntimeError
+     * @throws \Twig\Error\SyntaxError
      */
-    public function index()
+    public function index(int $id = null)
     {
-        $contacts = [];
-        if (!empty($this->userId)) {
-            $contacts = $this->Contact->getContactByUser($this->userId);
-        }
-        echo $this->twig->render('index.html.twig', ['contacts' => $contacts]);
+        echo $this->twig->render('contact.index.html.twig', [
+            'contacts' => $this->Contact->getByUser($this->userId)
+        ]);
     }
 
     /**
      * Ajout d'un contact
+     *
+     * @param int|null $id
+     * @throws \Twig\Error\LoaderError
+     * @throws \Twig\Error\RuntimeError
+     * @throws \Twig\Error\SyntaxError
      */
-    public function add()
+    public function add(int $id = null)
     {
-        $error = false;
-        if (!empty($_POST)) {
-            $response = $this->sanitize($_POST);
-            if ($response["response"]) {
-                $result = $this->Contact->create([
-                    'nom'    => $response['nom'],
-                    'prenom' => $response['prenom'],
-                    'email'  => $response['email'],
-                    'userId' => $this->userId
-                ]);
-                if ($result) {
-                    header('Location: /index.php?p=contact.index');
+        try {
+            if (!empty($_POST) && $this->isValid($_POST)) {
+                $response = $this->sanitize($_POST);
+                if ($this->Contact->create($response)) {
+                    static::redirect('contact/index');
                 }
-            } else {
-                $error = true;
             }
+        } catch (InvalidArgumentException $e) {
+            $error = $e->getMessage();
         }
-        echo $this->twig->render('add.html.twig', ['error' => $error]);
+        echo $this->twig->render('contact.add.html.twig', ['error' => $error ?? false, 'data' => $_POST]);
     }
 
     /**
      * Modification d'un contact
+     *
+     * @param int $id
+     * @throws \Twig\Error\LoaderError
+     * @throws \Twig\Error\RuntimeError
+     * @throws \Twig\Error\SyntaxError
      */
-    public function edit()
+    public function edit(int $id)
     {
-        //@todo
+        $contactData = $this->checkIfExist($id);
+
+        try {
+            if (!empty($_POST) && $this->isValid($_POST)) {
+                $contactData = $_POST;
+                $response = $this->sanitize($_POST);
+                if ($this->Contact->update($id, $response)) {
+                    static::redirect('contact/index');
+                }
+            }
+        } catch (InvalidArgumentException $e) {
+            $error = $e->getMessage();
+        }
+
+        echo $this->twig->render('contact.add.html.twig', ['error' => $error ?? false, 'data' => $contactData]);
+    }
+
+    /**
+     * Vérification de l'existance d'une addresse
+     *
+     * @param $id
+     * @return array
+     * @throws CustomException
+     */
+    private function checkIfExist($id): array
+    {
+        $contact = $this->Contact->findById($id);
+        if (!$contact) {
+            throw new CustomException('Le contact ' . $id . ' n\'existe pas');
+        }
+        return get_object_vars($contact);
     }
 
     /**
      * Suppression d'un contact
+     *
+     * @param int $id
      */
-    public function delete()
+    public function delete(int $id)
     {
-        $result = $this->Contact->delete($_GET['id']);
-        if ($result) {
-            header('Location: /index.php?p=contact.index');
+        if ($this->checkIfExist($id)) {
+            $this->Contact->delete($id);
+            static::redirect('contact/index');
         }
+
     }
 
     /**
+     * Normalisation des données à enregistrer
+     *
      * @param array $data
      * @return array
-     * @throws Exception
-     * @throws InvalidArgumentException
      */
     public function sanitize(array $data = []): array
     {
-        if (empty($nom)) {
-            throw new Exception('Le nom est obligatoire');
+        return [
+            'email' => strtolower($data['email']),
+            'firstname' => ucfirst(strtolower($data['firstname'])),
+            'lastname' => ucfirst(strtolower(($data['lastname']))),
+            'userId' => $this->userId
+        ];
+    }
+
+    /**
+     * Vérification des contraintes d'enregistrement
+     *
+     * @param array $data
+     * @return bool
+     * @throws Exception
+     */
+    private function isValid(array $data): bool
+    {
+        if (!isset($data['lastname']) || empty($data['lastname'])) {
+            throw new InvalidArgumentException('Le lastname est obligatoire');
+        } else {
+            $isPalindrome = $this->apiClient('palindrome', ['name' => $data['lastname']]);
+            if ($isPalindrome->response) {
+                throw new InvalidArgumentException($isPalindrome->message);
+            }
         }
 
-        if (empty($prenom)) {
-            throw new Exception('Le prenom est obligatoire');
+        if (!isset($data['firstname']) || empty($data['firstname'])) {
+            throw new InvalidArgumentException('Le firstname est obligatoire');
         }
 
-        if (empty($email)) {
-            throw new Exception('Le email est obligatoire');
-        } elseif (filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            throw new InvalidArgumentException('Le format de l\'email est invalide');
+        if (!isset($data['email']) || empty($data['email'])) {
+            throw new InvalidArgumentException('L\'email est obligatoire');
+        } else {
+            $isEmail = $this->apiClient('email', ['email' => $data['email']]);
+            if (!$isEmail->response) {
+                throw new InvalidArgumentException($isEmail->message);
+            }
         }
 
-        $prenom = strtoupper($data['prenom']);
-        $nom    = strtoupper($data['nom']);
-        $email  = strtolower($data['email']);
-
-        $isPalindrome = $this->apiClient('palindrome', ['name' => $nom]);
-        $isEmail = $this->apiClient('email', ['email' => $email]);
-        if ((!$isPalindrome->response) && $isEmail->response && $prenom) {
-            return [
-                'response' => true,
-                'email'    => $email,
-                'prenom'   => $prenom,
-                'nom'      => $nom
-            ];
-        }
+        return true;
     }
 }
