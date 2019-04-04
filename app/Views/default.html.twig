@@ -24,79 +24,104 @@
             text-transform: capitalize;
         }
 
+        .error-template {
+            padding: 40px 15px;
+            text-align: center;
+        }
+
+        .error-actions {
+            margin-top: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .flex {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-evenly;
+        }
     </style>
 </head>
 <body>
-
 <div class="container">
-
     <nav class="row navbar navbar-expand-lg navbar-light bg-light">
         <span class="navbar-brand" href="#">Gestion des contacts</span>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
                 aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
+        {% if session.auth is defined %}
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item active">
+                        <a class="nav-link" href="{{ baseUrl ~ '?p=contact/index' }}">
+                            Accueil <span class="sr-only"></span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ baseUrl ~ '?p=user/logout' }}">
+                            Se deconnecter <span class="sr-only"></span>
+                        </a>
 
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav mr-auto">
-                <li class="nav-item active">
-                    <a class="nav-link" href="/index.php?p=contact.index">Accueil <span class="sr-only"></span></a>
-                </li>
-            </ul>
-        </div>
-
+                    </li>
+                </ul>
+            </div>
+        {% endif %}
     </nav>
-    <div class="row"><h5 class="text-right col-md-12">{{ session.auth.login }} : {{ session.auth.email }} </h5></div>
+    {% if session.auth is defined %}
+        <div class="row">
+            <h5 class="text-right col-md-12">{{ session.auth.login }} : {{ session.auth.email }} </h5>
+        </div>
+    {% endif %}
     <main>
         {% block body %}{% endblock %}
     </main>
 </div>
 <script>
+    var baseUrl = "{{ baseUrl }}";
+    var notify = function(type, message) {
+        var $alert =  $('#alert').removeClass().addClass('alert alert-'+type);
+        $alert.children('span').removeClass().addClass('text-'+type).html(message);
+        $alert.show();
+    };
 
-    $("#nom").focusout(function () {
-        var nom = $('#nom').val();
-        if(nom){
+    $("#lastname").focusout(function () {
+        var lastname = $(this).val();
+        if (lastname) {
             $.ajax({
                 type: 'POST',
-                url: 'http://leboncoin.local/palindrome',
+                url: baseUrl + '?api=palindrome',
                 data: {
-                    'name': nom
+                    'name': lastname
                 },
                 success: function (res) {
-                    if (res.response != true) {
-                        $('#alert').show();
-                        $('#nameStatus').empty().append("<span class='text-success'>- Le nom est valide</span>");
-                    } else {
-                        $('#alert').show();
-                        $('#nameStatus').empty().append("<span class='text-danger'>- Le nom du contact ne peut pas être un palindrome</span>");
-                    }
+                    notify(!res.response ? 'success' : 'danger', res.message);
                 }
             });
         } else {
-            $('#nameStatus').empty().append("<span class='text-danger'>- Le nom du contact ne peut être nul </span>");
+            notify('danger', 'Le nom du contact ne peut être nul');
         }
-
     });
 
     $("#checkEmail").click(function () {
         var email = $('#email').val();
-        if(email){
-            $('#progress').show();
+        if (email) {
             $.ajax({
                 type: 'POST',
-                url: 'http://leboncoin.local/email',
+                url: baseUrl + '?api=email',
                 data: {
-                    'email': $('#email').val()
+                    'email': email
+                },
+                beforeSend: function () {
+                    $('#progress').show();
                 },
                 success: function (res) {
                     $('#progress').hide();
-                    if (res.response == true) {
+                    if (res.response === true) {
                         $('#error').hide();
                         $('#success').show();
                     } else {
                         $('#success').hide();
                         $('#error').show();
-                        console.log(res.message);
                     }
                 }
             });
@@ -104,7 +129,6 @@
             $('#success').hide();
             $('#error').show();
         }
-
     });
 </script>
 </body>

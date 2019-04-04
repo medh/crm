@@ -1,11 +1,10 @@
 {% extends 'default.html.twig' %}
-
 {% block body %}
     <div class="container">
         <div class="login-form">
             <div class="main-div">
                 <div class="panel">
-                    <h2>Accès untilisateur</h2>
+                    <h2>Accès utilisateur</h2>
                 </div>
                 {% if errors == true %}
                     <div class="alert alert-danger" role="alert">
@@ -21,8 +20,7 @@
                         <input type="password" class="form-control" id="password" name="password"
                                placeholder="Mot de passe">
                     </div>
-                    <button class="btn btn-success btn-lg" type="submit">connexion</button>
-
+                    <button class="btn btn-success btn-lg" type="submit">Connexion</button>
                 </form>
             </div>
         </div>

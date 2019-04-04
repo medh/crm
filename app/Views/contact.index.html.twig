@@ -1,0 +1,44 @@
+{% extends 'default.html.twig' %}
+{% block body %}
+    <div><h4 class="text-center">Liste des contacts</h4></div>
+    <div class="row row col-md-12 pull-right ">
+        <a href="{{ baseUrl ~ '?p=contact/add' }}" class="btn btn-primary btn-xs pull-right">
+            <b>+</b> Ajouter un contact
+        </a>
+    </div>
+    <div class="row custyle">
+        <table class="table table-striped custab">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nom</th>
+                <th>Prenom</th>
+                <th>Email</th>
+                <th class="text-center">Action</th>
+            </tr>
+            </thead>
+            {% for contact in contacts %}
+                <tr>
+                    <td>{{ contact.id|e }}</td>
+                    <td>{{ contact.lastname|e }}</td>
+                    <td>{{ contact.firstname|e }}</td>
+                    <td>{{ contact.email|e }}</td>
+                    <td class="text-center flex">
+                        <a class='btn btn-info btn-xs' href="{{ baseUrl ~ '?p=address/index/' ~ contact.id }}">
+                            <span class="glyphicon glyphicon-edit"></span> Adresses
+                        </a>
+                        <a class='btn btn-info btn-xs' href="{{ baseUrl ~ '?p=contact/edit/' ~ contact.id }}"><span
+                                    class="glyphicon glyphicon-edit"></span> Edition</a>
+                        <form action="{{ baseUrl ~ '?p=contact/delete/' ~ contact.id }}" method="post">
+                            <input type="hidden" name="id" value="{{ contact.id|e }}">
+                            <button href="{{ baseUrl ~ '?p=contact/delete/' ~ contact.id|e }}"
+                                    class="btn btn-danger btn-xs"><span
+                                        class="glyphicon glyphicon-remove"></span> Suppression
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+{% endblock %}

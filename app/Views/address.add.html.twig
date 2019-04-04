@@ -1,13 +1,12 @@
 {% extends 'default.html.twig' %}
-
 {% block body %}
-
     <div class="card form-row">
         <div class="card-body ">
-            <h3 class="card-subtitle mb-2 text-muted">Edition d' adresses </h3>
+            <h3 class="card-subtitle mb-2 text-muted">Edition d'adresse</h3>
             {% if error %}
-                <div  class="alert alert-danger" >
-                    Problème lors de la modification de l'adresse
+                <div class="alert alert-danger" >
+                    Problème lors de la modification de l'adresse :<br>
+                    - {{ error }}
                 </div>
             {% endif %}
             <form method="post" action="">
@@ -29,7 +28,7 @@
                     <div class="col-md-3 col-lg-2">
                         <div class="form-group">
                             <label class="control-label">Code postal</label>
-                            <input type="text" id="postalCode" name="postalCode" value="{{ data.postalCode }}"
+                            <input type="text" maxlength="6" id="postalCode" name="postalCode" value="{{ data.postalCode }}"
                                    class="form-control"/>
                         </div>
                     </div>
@@ -39,21 +38,16 @@
                             <input type="text" id="city" name="city" value="{{ data.city }}" class="form-control" onkeyup="this.value = this.value.toUpperCase();"/>
                         </div>
                     </div>
-
                     <div class="col-md-3 col-lg-3">
                         <div class="form-group">
                             <label class="control-label">Pays</label>
                             <input type="text" id="country" name="country" value="{{ data.country }}"
                                    class="form-control" onkeyup="this.value = this.value.toUpperCase();"/>
-                            <input type="hidden" id="idContact" value="{{ idContact }}" name="idContact"
+                            <input type="hidden" id="idContact" value="{{ data.idContact }}" name="idContact"
                                    class="form-control"/>
                         </div>
                     </div>
-
-
                 </div>
-
-
                 <div class="row">
                     <div class="col-lg-12">
                         <div class="pull-right">
@@ -62,9 +56,6 @@
                     </div>
                 </div>
             </form>
-
         </div>
-
     </div>
-
 {% endblock %}

@@ -1,0 +1,23 @@
+{% extends 'default.html.twig' %}
+{% block body %}
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="error-template">
+                    <h1>Oups!</h1>
+                    <h2>404 Page non trouvée</h2>
+                    {% if message %}
+                        <div class="error-details">
+                            {{ message }}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="error-actions">
+                    <a href="javascript:history.back()" class="btn btn-primary btn-lg">
+                        Retour
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
