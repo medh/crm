@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Components;
-use App\Components\Api\ApiService;
+namespace App\Components\Api;
 
 class Api extends ApiService
 {
     /**
-     * Palindrome
+     * Méthode à appeler par l'api pour vérifier
+     * si la chaine en entrée est un palindrome
      */
     public function palindrome()
     {
@@ -15,15 +15,23 @@ class Api extends ApiService
         }
 
         $name = $this->request['name'];
+
+        $palindrome = new Palindrome();
         $palindrome->setName($name);
 
-        if ($name) {
-            if ($palindrome->is_valid()) {
-                $this->response($this->json(["response" => true]), 200);
-            } else {
-                $this->response($this->json(["response" => false]), 200);
-            }
+        if ($palindrome->isValid()) {
+            $result = [
+                "response" => true,
+                "message" => "Le nom du contact ne peut pas être un palindrome"
+            ];
+        } else {
+            $result = [
+                "response" => false,
+                "message" => " Le nom est valide"
+            ];
         }
+
+        $this->response($this->json($result), 200);
     }
 
     /**
@@ -34,37 +42,32 @@ class Api extends ApiService
         if ($this->getRequestMethod() != "POST") {
             $this->response('', 406);
         }
-        $email = $this->_request['email'];
-        if ($email) {
-            if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $this->response($this->json([
-                    "response" => true,
-                    "message"  => "L'email est au bon format"
-                ]), 200);
-            } else {
-                $this->response($this->json([
-                    "response" => false,
-                    "message"  => "Le format de l'email n'est pas correct"
-                ]), 200);
-            }
+
+        $email = $this->request['email'];
+
+        if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $result = [
+                "response" => true,
+                "message" => "L'email est au bon format"
+            ];
+        } else {
+            $result = [
+                "response" => false,
+                "message" => "Le format de l'email n'est pas correct"
+            ];
         }
+
+        $this->response($this->json($result), 200);
     }
 
     /**
      * Encodage des données en json
      *
      * @param $data
-     *
      * @return string
      */
-    private function json($data)
+    private function json($data): string
     {
-        if (is_array($data)) {
-            return json_encode($data);
-        }
-
+        return is_array($data) ? json_encode($data) : $data;
     }
 }
-
-$api = new Api();
-$api->processApi();

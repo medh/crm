@@ -7,8 +7,8 @@ class ApiService
     /** @var $request */
     public $request;
     /** @var string $content_type */
-    public $content_type = "application/json";
-    /** @var string  $methode*/
+    public $contentType = "application/json";
+    /** @var string $methode */
     public $methode = "";
     /** @var int $code */
     public $code = 200;
@@ -16,13 +16,24 @@ class ApiService
     /**
      * ApiService constructor.
      */
-    public function __construct()
+    public function __construct($request)
     {
         $this->inputs();
+        $this->setRequest($request);
     }
 
     /**
-     * processApi
+     * Setter de la méthode à appeler
+     *
+     * @string $request
+     */
+    private function setRequest(string $request)
+    {
+        $this->request['request'] = $request;
+    }
+
+    /**
+     * Exécution de la fonction demandé par l'api
      */
     public function processApi()
     {
@@ -35,9 +46,11 @@ class ApiService
     }
 
     /**
-     * @return mixed
+     * Récupération de la description du status retourné
+     *
+     * @return string
      */
-    private function getStatusMessage()
+    private function getStatusMessage() : string
     {
         $status = [
             200 => 'OK',
@@ -55,9 +68,9 @@ class ApiService
     /**
      * Récupération de la méthode
      *
-     * @return mixed
+     * @return string
      */
-    public function getRequestMethod()
+    public function getRequestMethod() : string
     {
         return $_SERVER['REQUEST_METHOD'];
     }
@@ -87,6 +100,8 @@ class ApiService
     }
 
     /**
+     * Envoie de la réponse
+     *
      * @param $data
      * @param $status
      */
@@ -99,15 +114,18 @@ class ApiService
     }
 
     /**
-     * Mise à jour de l'entete
+     * Mise à jour de l'entête
+
      */
     private function setHeader()
     {
         header("HTTP/1.1 " . $this->code . " " . $this->getStatusMessage());
-        header("Content-Type:" . $this->_content_type);
+        header("Content-Type:" . $this->contentType);
     }
 
     /**
+     * Normalisation des données envoyées par la requete
+     *
      * @param $data
      * @return array|string
      */
