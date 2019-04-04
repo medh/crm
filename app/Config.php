@@ -6,13 +6,16 @@ class Config
 {
     /** @var array $settings  */
     private $settings = [];
-    /** @var  $instance */
+
+    /** @var $instance */
     private static $instance;
 
     /**
+     * Singleton de la class
+     *
      * @return Config
      */
-    public static function getInstance()
+    public static function getInstance() : self
     {
         if (is_null(self::$instance)) {
             self::$instance = new Config();
@@ -27,14 +30,16 @@ class Config
     public function __construct()
     {
         $this->settings = [
-            "db_user" => "newuser",
-            "db_pass" => "password",
+            "db_user" => "root",
+            "db_pass" => "root",
             "db_host" => "localhost",
             "db_name" => "crm"
         ];
     }
 
     /**
+     * Récupération d'une configuration
+     *
      * @param $key
      * @return mixed|null
      */
