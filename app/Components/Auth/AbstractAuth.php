@@ -41,9 +41,10 @@ abstract class AbstractAuth
 
     /**
      * Méthode pour vérifier si l'utilisateur est connecté
+     *
      * @return bool
      */
-    public function logged()
+    public static function logged()
     {
         return isset($_SESSION['auth']);
     }
