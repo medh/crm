@@ -6,8 +6,6 @@ use App\Database;
 
 abstract class AbstractModel
 {
-    /** @var string  */
-    protected $model;
     /** @var Database  */
     protected $database;
 
@@ -18,32 +16,32 @@ abstract class AbstractModel
     public function __construct(Database $database)
     {
         $this->database = $database;
-
-        if (is_null($this->model)) {
-            $tab = explode('\\', get_class($this));
-            $class = end($tab);
-            $this->model = strtolower(str_replace('Model', '', $class)) . 's';
-        }
     }
 
     /**
+     * Méthode pour résupérer la liste de toutes les lignes dans une table
+     *
      * @return array|bool|false|mixed|\PDOStatement
      */
     public function getAll()
     {
-        return $this->query('SELECT * FROM ' . $this->model);
+        return $this->query('SELECT * FROM ' . $this->table);
     }
 
     /**
+     * Méthode de récupération d'une entité à partir de don Id
+     *
      * @param $id
      * @return array|bool|false|mixed|\PDOStatement
      */
     public function findById($id)
     {
-        return $this->query("SELECT * FROM {$this->model} WHERE id = ?", [$id], true);
+        return $this->query("SELECT * FROM {$this->table} WHERE id = ?", [$id], true);
     }
 
     /**
+     * Méthode de préparation et d'exécution de requete
+     *
      * @param $statement
      * @param null $attributes
      * @param bool $one
@@ -68,8 +66,9 @@ abstract class AbstractModel
     }
 
     /**
-     * @param $fields
+     * Méthode de création d'une ligne dans la table cible
      *
+     * @param $fields
      * @return array|bool|mixed|\PDOStatement
      */
     public function create($fields)
@@ -87,12 +86,25 @@ abstract class AbstractModel
     }
 
     /**
+     * Méthode de mise à jour d'une ligne dans la table cible
+     *
      * @param $id
      * @param $fields
      */
     public function update($id, $fields)
     {
-        //@todo
+        $fields = $this->cleanInputs($fields);
+        $sqlParts = [];
+        $attributes = [];
+        foreach ($fields as $k => $v) {
+            $sqlParts[] = "$k = ?";
+            $attributes[] = $v;
+        }
+        $attributes[] = $id;
+        $sqlPart = implode(', ', $sqlParts);
+
+        return $this->query("UPDATE {$this->table} SET $sqlPart WHERE id = ?",
+            $attributes, true);
     }
 
     /**
@@ -103,14 +115,13 @@ abstract class AbstractModel
      */
     public function delete($id)
     {
-        return $this->query("DELETE FROM {$this->table} WHERE id = ?", [$id],
-            true);
+        return $this->query("DELETE FROM {$this->table} WHERE id = ?", [$id], true);
     }
 
     /**
+     * Méthode de normalisation des champs
      *
      * @param $data
-     *
      * @return array|string
      */
     private function cleanInputs($data)

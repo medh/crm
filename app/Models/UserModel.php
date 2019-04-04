@@ -1,19 +1,21 @@
 <?php
 
-namespace App\Model;
-
-use App\Models\AbstractModel;
+namespace App\Models;
 
 class UserModel extends AbstractModel
 {
-    /** @var string  */
+    /** @var string */
     protected $table = "users";
 
     /**
-     * @return mixed
+     * Récupération de l'utilisateur par son login
+     *
+     * @param $login
+     * @return array|bool|false|mixed|\PDOStatement
      */
-    public function login()
+    public function getByLogin($login)
     {
-        //@TODO
+        return $this->query("SELECT * FROM {$this->table} WHERE login = ?", [$login], true);
+
     }
 }
