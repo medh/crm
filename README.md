@@ -16,11 +16,7 @@ Installer la base de données avec vos informations :
 DB_USER : nom d'utilisateur  
 DB_PASS : mot de passe  
 DB_NAME : nom de la base de données
-> mysql -u"DB_USER" -p"DB_PASS" << END
-  CREATE DATABASE IF NOT EXISTS DB_NAME;
-  use DB_NAME;
-  source upgrade.sql;
-  END
+> mysql -u"DB_USER" -p"DB_PASS" -e'CREATE DATABASE IF NOT EXISTS DB_NAME;use DB_NAME; \. upgrade.sql'
 
 ## Configuration
 _________________
